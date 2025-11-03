@@ -2,10 +2,11 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  $1  
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- 提示横屏的兼容 meta（微信/QQ X5 内核等） -->
   <meta name="screen-orientation" content="landscape">
   <meta name="x5-orientation" content="landscape">
-<title>爱心漂浮贴纸 ✨</title>
+  <title>爱心漂浮贴纸 ✨</title>
   <style>
     :root{
       /* —— 可调参数 —— */
@@ -28,8 +29,9 @@
     }
     .stage{
       position:fixed; inset:0; overflow:hidden; touch-action:none;
-      background: radial-gradient(1000px 500px at 50% 20%, rgba(255,192,203,.15), transparent 60%) ,
-                  linear-gradient(180deg, #fffafc, #fff 40%);
+      background:
+        radial-gradient(1000px 500px at 50% 20%, rgba(255,192,203,.15), transparent 60%),
+        linear-gradient(180deg, #fffafc, #fff 40%);
     }
 
     .note{
@@ -56,7 +58,7 @@
       .hud{ left:8px; bottom:8px; }
       .hud button{ padding:8px 10px; }
     }
-  
+
     /* —— 竖屏提示：请旋转至横屏 —— */
     @media screen and (orientation:portrait) {
       body::before {
@@ -77,7 +79,7 @@
       /* 当竖屏时隐藏舞台，避免在提示后面仍在渲染、耗电 */
       .stage { visibility: hidden; }
     }
-  $1
+  </style>
 </head>
 <body>
   <div class="stage" id="stage"></div>
@@ -88,7 +90,7 @@
   </div>
 
   <script>
-    // —— 可调内容 ——
+    // —— 可调内容 —— 
     const TIPS = [
       "保持微笑呀","照顾好自己","别感冒",
       "我想你了","期待见面","保持好心情哦","记得想我",
@@ -96,7 +98,7 @@
     ];
     const BG_COLORS = ['lightgreen','lightyellow','skyblue','plum','bisque','mistyrose','oldlace','lavender','lavenderblush'];
 
-    // —— 工具函数 ——
+    // —— 工具函数 —— 
     const easeOutCubic = t => { t = Math.max(0, Math.min(1, t)); return 1 - Math.pow(1 - t, 3); };
     const easeInOutSine = t => { t = Math.max(0, Math.min(1, t)); return -(Math.cos(Math.PI * t) - 1) / 2; };
 
@@ -116,7 +118,7 @@
     function clamp(x, min, max){ return Math.max(min, Math.min(max, x)); }
     function lerp(a, b, t){ return [ a[0] + (b[0]-a[0]) * t, a[1] + (b[1]-a[1]) * t ]; }
 
-    // —— 主逻辑 ——
+    // —— 主逻辑 —— 
     (function(){
       const stage = document.getElementById('stage');
       const W = () => stage.clientWidth;
@@ -130,6 +132,7 @@
       let STEP = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--step-ms')) || 16;
 
       const state = { items: [], running: true, lastTick: performance.now() };
+      let heartPts = [];
 
       function makeItem(i){
         const el = document.createElement('div');
@@ -147,11 +150,8 @@
         const sx = (Math.random() * (maxX - minX)) + minX;
         const sy = (Math.random() * (maxY - minY)) + minY;
 
-        // 心形中心与缩放
-        const cx = (W() - w) / 2;
-        const cy = (H() - h) / 2;
-        const scale = Math.min(W(), H()) / 40;
-        const heart = heartPts[i];
+        // 心形目标点
+        const pHeart = heartPts[i];
 
         // 轻微抖动延迟
         const jitter = (Math.random() * 150)|0;
@@ -160,7 +160,7 @@
         return {
           el,
           start:[sx, sy],
-          heart:[ clamp(heart[0], minX, maxX), clamp(heart[1], minY, maxY) ],
+          heart:[ clamp(pHeart[0], minX, maxX), clamp(pHeart[1], minY, maxY) ],
           scatter:null,
           phase:'born',
           phaseStart: now + jitter,
@@ -187,10 +187,8 @@
       }
 
       // 初始化
-      let heartPts = [];
       (function init(){
         layoutAll();
-        // 先只放入 DOM，再给首帧位置
         for(let i=0;i<MAX;i++){
           state.items.push(makeItem(i));
         }
@@ -199,16 +197,13 @@
 
       // 动画主循环
       function tick(now){
-        if(now - state.lastTick < STEP){
-          requestAnimationFrame(tick); return;
-        }
+        if(now - state.lastTick < STEP){ requestAnimationFrame(tick); return; }
         state.lastTick = now;
         if(state.running){
-          let active = false;
           for(const it of state.items){
             const phase = it.phase;
             if(phase === 'done') continue;
-            active = true;
+
             if(phase === 'born'){
               if(now - it.phaseStart >= BORN){
                 it.phase = 'to_heart'; it.phaseStart = now;
@@ -226,7 +221,7 @@
               if(now - it.phaseStart >= STAY){
                 const minX = 0, maxX = Math.max(0, W() - it.w);
                 const minY = 0, maxY = Math.max(0, H() - it.h);
-                it.scatter = [ (Math.random()*(maxX-0))+0, (Math.random()*(maxY-0))+0 ];
+                it.scatter = [ Math.random()*maxX, Math.random()*maxY ];
                 it.phase = 'scatter'; it.phaseStart = now;
               }
               continue;
@@ -260,13 +255,11 @@
         state.items.forEach(it=> setPos(it.el, it.start[0], it.start[1]));
       });
 
-      // 窗口尺寸变化时重算心形点
+      // 窗口尺寸变化时重算心形点（节流）
       let resizeTimer = 0;
       window.addEventListener('resize', ()=>{
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(()=>{
-          layoutAll();
-        }, 120);
+        resizeTimer = setTimeout(()=>{ layoutAll(); }, 120);
       }, {passive:true});
 
       // 防止 iOS 橡皮筋回弹
@@ -275,5 +268,3 @@
   </script>
 </body>
 </html>
-
-
