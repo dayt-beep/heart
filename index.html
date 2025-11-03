@@ -2,8 +2,10 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>爱心漂浮贴纸 ✨</title>
+  $1  
+  <meta name="screen-orientation" content="landscape">
+  <meta name="x5-orientation" content="landscape">
+<title>爱心漂浮贴纸 ✨</title>
   <style>
     :root{
       /* —— 可调参数 —— */
@@ -54,7 +56,28 @@
       .hud{ left:8px; bottom:8px; }
       .hud button{ padding:8px 10px; }
     }
-  </style>
+  
+    /* —— 竖屏提示：请旋转至横屏 —— */
+    @media screen and (orientation:portrait) {
+      body::before {
+        content: "请旋转手机至横屏以查看完整动画 💖";
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        font-size: 18px;
+        color: #d33;
+        z-index: 999999;
+        text-align: center;
+        padding: 24px;
+        line-height: 1.6;
+      }
+      /* 当竖屏时隐藏舞台，避免在提示后面仍在渲染、耗电 */
+      .stage { visibility: hidden; }
+    }
+  $1
 </head>
 <body>
   <div class="stage" id="stage"></div>
@@ -252,4 +275,3 @@
   </script>
 </body>
 </html>
-
